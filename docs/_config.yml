@@ -3,7 +3,7 @@
 
 title: Hybrid AI Stack
 description: Production-ready AI orchestration with 60-80% cost reduction through intelligent request routing
-baseurl: "/hybrid-ai-stack"
+baseurl: "/Hybrid-ai-stack-intent-solutions"
 url: "https://jeremylongshore.github.io"
 
 # Theme
@@ -16,7 +16,7 @@ author:
   email: jeremy@example.com
 
 # Repository
-repository: jeremylongshore/hybrid-ai-stack
+repository: jeremylongshore/Hybrid-ai-stack-intent-solutions
 
 # Build settings
 markdown: kramdown
