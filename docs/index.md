@@ -13,7 +13,7 @@ Production-ready AI orchestration system that reduces costs by 60-80% through in
 {: .fs-6 .fw-300 }
 
 [Get Started →](QUICKSTART.html){: .btn .btn-primary .fs-5 .mb-4 .mb-md-0 .mr-2 }
-[View on GitHub](https://github.com/jeremylongshore/hybrid-ai-stack){: .btn .fs-5 .mb-4 .mb-md-0 }
+[View on GitHub](https://github.com/jeremylongshore/Hybrid-ai-stack-intent-solutions){: .btn .fs-5 .mb-4 .mb-md-0 }
 
 ---
 
@@ -68,8 +68,8 @@ graph TB
 ### 1. Install
 
 ```bash
-git clone https://github.com/jeremylongshore/hybrid-ai-stack.git
-cd hybrid-ai-stack
+git clone https://github.com/jeremylongshore/Hybrid-ai-stack-intent-solutions.git
+cd Hybrid-ai-stack-intent-solutions
 ./install.sh
 ```
 
@@ -216,13 +216,13 @@ curl -X POST http://localhost:8080/api/v1/chat \
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](https://github.com/jeremylongshore/hybrid-ai-stack/blob/main/CONTRIBUTING.md) for details.
+Contributions are welcome! Please see [CONTRIBUTING.md](https://github.com/jeremylongshore/Hybrid-ai-stack-intent-solutions/blob/main/CONTRIBUTING.md) for details.
 
 ### Development Setup
 
 ```bash
-git clone https://github.com/jeremylongshore/hybrid-ai-stack.git
-cd hybrid-ai-stack
+git clone https://github.com/jeremylongshore/Hybrid-ai-stack-intent-solutions.git
+cd Hybrid-ai-stack-intent-solutions
 ./install.sh
 source venv/bin/activate
 pytest tests/
@@ -232,15 +232,15 @@ pytest tests/
 
 ## License
 
-MIT License - see [LICENSE](https://github.com/jeremylongshore/hybrid-ai-stack/blob/main/LICENSE) for details.
+MIT License - see [LICENSE](https://github.com/jeremylongshore/Hybrid-ai-stack-intent-solutions/blob/main/LICENSE) for details.
 
 ---
 
 ## Support
 
 - 📖 **Documentation**: [Full docs](README.html)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/jeremylongshore/hybrid-ai-stack/discussions)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/jeremylongshore/hybrid-ai-stack/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/jeremylongshore/Hybrid-ai-stack-intent-solutions/discussions)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/jeremylongshore/Hybrid-ai-stack-intent-solutions/issues)
 - 📧 **Email**: jeremy@example.com
 
 ---
