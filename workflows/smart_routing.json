@@ -1,0 +1,115 @@
+{
+  "name": "Smart AI Request Routing",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-request",
+        "responseMode": "responseNode"
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://api-gateway:8080/api/v1/complexity",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={{ { \"prompt\": $json.body.prompt } }}"
+      },
+      "name": "Estimate Complexity",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.complexity }}",
+              "operation": "smaller",
+              "value2": 0.3
+            }
+          ]
+        }
+      },
+      "name": "Route Decision",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://ollama-cpu:11434/api/generate",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "={{ { \"model\": \"tinyllama\", \"prompt\": $json.prompt, \"stream\": false } }}"
+      },
+      "name": "TinyLlama Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://api-gateway:8080/api/v1/chat",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "={{ { \"prompt\": $json.prompt } }}"
+      },
+      "name": "Smart Router",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Create Taskwarrior task\nconst task = {\n  description: `AI Request: ${$json.model}`,\n  project: 'vps_ai.router',\n  tags: ['routing', 'automated'],\n  cost: $json.cost || 0\n};\n\nreturn task;"
+      },
+      "name": "Taskwarrior Task",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node": "Estimate Complexity", "type": "main", "index": 0}]]
+    },
+    "Estimate Complexity": {
+      "main": [[{"node": "Route Decision", "type": "main", "index": 0}]]
+    },
+    "Route Decision": {
+      "main": [
+        [{"node": "TinyLlama Request", "type": "main", "index": 0}],
+        [{"node": "Smart Router", "type": "main", "index": 0}]
+      ]
+    },
+    "TinyLlama Request": {
+      "main": [[{"node": "Taskwarrior Task", "type": "main", "index": 0}]]
+    },
+    "Smart Router": {
+      "main": [[{"node": "Taskwarrior Task", "type": "main", "index": 0}]]
+    },
+    "Taskwarrior Task": {
+      "main": [[{"node": "Respond to Webhook", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

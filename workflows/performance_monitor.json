@@ -1,0 +1,72 @@
+{
+  "name": "Performance Tracking Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "weeks", "weeksInterval": 1}]
+        }
+      },
+      "name": "Weekly Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Prepare Prometheus queries for weekly metrics\nconst queries = [\n  { name: 'total_requests', query: 'sum(increase(api_gateway_requests_total[7d]))' },\n  { name: 'avg_latency', query: 'avg(api_gateway_request_duration_seconds)' },\n  { name: 'requests_by_model', query: 'sum by (model) (increase(api_gateway_requests_total[7d]))' },\n  { name: 'total_cost', query: 'sum(api_gateway_cost_total)' },\n  { name: 'error_rate', query: 'sum(rate(api_gateway_requests_total{status=\"error\"}[7d]))' }\n];\n\nreturn queries;"
+      },
+      "name": "Prepare Queries",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://prometheus:9090/api/v1/query",
+        "qs": {
+          "query": "={{ $json.query }}"
+        }
+      },
+      "name": "Execute Queries",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Generate comprehensive report\nconst data = $input.all();\n\n// Extract metrics\nconst totalRequests = data.find(d => d.json.query?.includes('total_requests'));\nconst avgLatency = data.find(d => d.json.query?.includes('avg_latency'));\nconst requestsByModel = data.find(d => d.json.query?.includes('requests_by_model'));\nconst totalCost = data.find(d => d.json.query?.includes('total_cost'));\nconst errorRate = data.find(d => d.json.query?.includes('error_rate'));\n\nconst report = {\n  period: 'Last 7 days',\n  timestamp: new Date().toISOString(),\n  metrics: {\n    total_requests: parseFloat(totalRequests?.json.data?.result[0]?.value[1] || 0),\n    avg_latency_seconds: parseFloat(avgLatency?.json.data?.result[0]?.value[1] || 0).toFixed(2),\n    total_cost_usd: parseFloat(totalCost?.json.data?.result[0]?.value[1] || 0).toFixed(2),\n    error_rate: parseFloat(errorRate?.json.data?.result[0]?.value[1] || 0).toFixed(4)\n  },\n  models: (requestsByModel?.json.data?.result || []).map(r => ({\n    model: r.metric?.model || 'unknown',\n    requests: parseFloat(r.value[1])\n  }))\n};\n\nreturn report;"
+      },
+      "name": "Generate Report",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Format report as readable text\nconst r = $json;\n\nconst text = `📊 Weekly Performance Report\\n\\nPeriod: ${r.period}\\nGenerated: ${r.timestamp}\\n\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\\n📈 Metrics:\\n  Total Requests: ${r.metrics.total_requests.toLocaleString()}\\n  Avg Latency: ${r.metrics.avg_latency_seconds}s\\n  Total Cost: $${r.metrics.total_cost_usd}\\n  Error Rate: ${(r.metrics.error_rate * 100).toFixed(2)}%\\n\\n🤖 Requests by Model:\\n${r.models.map(m => `  ${m.model}: ${m.requests.toLocaleString()}`).join('\\n')}\\n\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;\n\nreturn { text, report: r };"
+      },
+      "name": "Format Report",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Weekly Schedule": {
+      "main": [[{"node": "Prepare Queries", "type": "main", "index": 0}]]
+    },
+    "Prepare Queries": {
+      "main": [[{"node": "Execute Queries", "type": "main", "index": 0}]]
+    },
+    "Execute Queries": {
+      "main": [[{"node": "Generate Report", "type": "main", "index": 0}]]
+    },
+    "Generate Report": {
+      "main": [[{"node": "Format Report", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

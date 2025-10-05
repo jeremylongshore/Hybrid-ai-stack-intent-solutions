@@ -1,0 +1,115 @@
+{
+  "name": "Multi-Stage AI Orchestrator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "orchestrate",
+        "responseMode": "responseNode"
+      },
+      "name": "Orchestrator Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse and validate input\nconst input = $json.body;\n\nif (!input.task) {\n  throw new Error('Missing required field: task');\n}\n\nreturn {\n  task: input.task,\n  context: input.context || {},\n  stages: input.stages || ['research', 'analyze', 'summarize'],\n  timestamp: new Date().toISOString()\n};"
+      },
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://api-gateway:8080/api/v1/chat",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "={{ { \"prompt\": \"Research this topic comprehensively: \" + $json.task + \". Provide detailed information from multiple angles. Context: \" + JSON.stringify($json.context) } }}"
+      },
+      "name": "Stage 1: Research (Claude)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://ollama-cpu:11434/api/generate",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "={{ { \"model\": \"phi2\", \"prompt\": \"Analyze the following research and identify key insights, patterns, and conclusions:\\n\\n\" + $json.response, \"stream\": false } }}"
+      },
+      "name": "Stage 2: Analyze (Phi-2)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://ollama-cpu:11434/api/generate",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "={{ { \"model\": \"tinyllama\", \"prompt\": \"Create a concise summary with 5 key bullet points from this analysis:\\n\\n\" + $json.response, \"stream\": false } }}"
+      },
+      "name": "Stage 3: Summarize (TinyLlama)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Compile final output\nconst stages = $input.all();\n\n// Extract responses from each stage\nconst research = stages[2].json.response;  // From Stage 1\nconst analysis = stages[3].json.response;  // From Stage 2\nconst summary = stages[4].json.response;   // From Stage 3\n\n// Calculate total cost\nconst totalCost = stages.reduce((sum, stage) => {\n  return sum + (stage.json.cost || 0);\n}, 0);\n\nconst output = {\n  task: stages[1].json.task,\n  stages: {\n    research: {\n      model: 'claude-sonnet',\n      content: research,\n      cost: stages[2].json.cost || 0\n    },\n    analysis: {\n      model: 'phi2',\n      content: analysis,\n      cost: 0\n    },\n    summary: {\n      model: 'tinyllama',\n      content: summary,\n      cost: 0\n    }\n  },\n  total_cost: totalCost,\n  processing_time: new Date() - new Date(stages[1].json.timestamp),\n  timestamp: new Date().toISOString()\n};\n\nreturn output;"
+      },
+      "name": "Compile Output",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Create Taskwarrior task for pipeline execution\nconst task = {\n  description: `Orchestrator Pipeline: ${$json.task.substring(0, 50)}`,\n  project: 'vps_ai.workflows',\n  tags: ['orchestrator', 'automated', 'cost'],\n  cost: $json.total_cost,\n  duration: $json.processing_time\n};\n\nreturn task;"
+      },
+      "name": "Log to Taskwarrior",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "name": "Return Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    }
+  ],
+  "connections": {
+    "Orchestrator Webhook": {
+      "main": [[{"node": "Parse Input", "type": "main", "index": 0}]]
+    },
+    "Parse Input": {
+      "main": [[{"node": "Stage 1: Research (Claude)", "type": "main", "index": 0}]]
+    },
+    "Stage 1: Research (Claude)": {
+      "main": [[{"node": "Stage 2: Analyze (Phi-2)", "type": "main", "index": 0}]]
+    },
+    "Stage 2: Analyze (Phi-2)": {
+      "main": [[{"node": "Stage 3: Summarize (TinyLlama)", "type": "main", "index": 0}]]
+    },
+    "Stage 3: Summarize (TinyLlama)": {
+      "main": [[{"node": "Compile Output", "type": "main", "index": 0}]]
+    },
+    "Compile Output": {
+      "main": [[{"node": "Log to Taskwarrior", "type": "main", "index": 0}]]
+    },
+    "Log to Taskwarrior": {
+      "main": [[{"node": "Return Response", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

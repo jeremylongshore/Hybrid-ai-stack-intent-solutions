@@ -1,0 +1,74 @@
+# Environment variables
+.env
+*.env
+!.env.example
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate.d/
+
+# AWS
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# n8n
+n8n-data/
+.n8n/
+
+# Docker
+docker-compose.override.yml
+
+# Taskwarrior
+.task/
+*.data
+backlog.data
+completed.data
+pending.data
+undo.data
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Ansible
+*.retry
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Credentials
+credentials.json
+service-account.json

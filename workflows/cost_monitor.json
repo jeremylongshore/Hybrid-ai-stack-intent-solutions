@@ -1,0 +1,99 @@
+{
+  "name": "Cost Monitoring & Alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "hours", "hoursInterval": 1}]
+        }
+      },
+      "name": "Hourly Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://prometheus:9090/api/v1/query",
+        "qs": {
+          "query": "sum(api_gateway_cost_total)"
+        }
+      },
+      "name": "Query Total Costs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://prometheus:9090/api/v1/query",
+        "qs": {
+          "query": "sum(rate(api_gateway_cost_total[1h])) * 730"
+        }
+      },
+      "name": "Query Monthly Projection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 450]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Calculate cost metrics\nconst totalCost = parseFloat($input.first().json.data.result[0]?.value[1] || 0);\nconst monthlyProjection = parseFloat($input.last().json.data.result[0]?.value[1] || 0);\n\n// Thresholds\nconst DAILY_THRESHOLD = 10;  // $10/day\nconst MONTHLY_THRESHOLD = 200;  // $200/month\n\nconst alert = {\n  total_cost: totalCost.toFixed(2),\n  monthly_projection: monthlyProjection.toFixed(2),\n  daily_threshold_exceeded: totalCost > DAILY_THRESHOLD,\n  monthly_threshold_exceeded: monthlyProjection > MONTHLY_THRESHOLD,\n  timestamp: new Date().toISOString()\n};\n\nreturn alert;"
+      },
+      "name": "Calculate Metrics",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 375]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.daily_threshold_exceeded || $json.monthly_threshold_exceeded }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Check Thresholds",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 375]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Format alert message\nconst message = `🚨 API Cost Alert!\\n\\nTotal Cost: $${$json.total_cost}\\nMonthly Projection: $${$json.monthly_projection}\\n\\nTime to optimize routing!\\n\\nTimestamp: ${$json.timestamp}`;\n\nreturn { message };"
+      },
+      "name": "Format Alert",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 375]
+    }
+  ],
+  "connections": {
+    "Hourly Schedule": {
+      "main": [
+        [
+          {"node": "Query Total Costs", "type": "main", "index": 0},
+          {"node": "Query Monthly Projection", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Query Total Costs": {
+      "main": [[{"node": "Calculate Metrics", "type": "main", "index": 0}]]
+    },
+    "Query Monthly Projection": {
+      "main": [[{"node": "Calculate Metrics", "type": "main", "index": 0}]]
+    },
+    "Calculate Metrics": {
+      "main": [[{"node": "Check Thresholds", "type": "main", "index": 0}]]
+    },
+    "Check Thresholds": {
+      "main": [[{"node": "Format Alert", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}
