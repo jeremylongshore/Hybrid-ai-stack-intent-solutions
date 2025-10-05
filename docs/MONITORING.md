@@ -451,7 +451,7 @@ groups:
           severity: warning
         annotations:
           summary: "High API costs detected"
-          description: "API costs are increasing rapidly ({{ $value }}/hour)"
+          description: "API costs are increasing rapidly ({% raw %}{{ $value }}{% endraw %}/hour)"
 
       # High error rate
       - alert: HighErrorRate
@@ -461,7 +461,7 @@ groups:
           severity: critical
         annotations:
           summary: "High error rate"
-          description: "Error rate is {{ $value }}/sec"
+          description: "Error rate is {% raw %}{{ $value }}{% endraw %}/sec"
 
       # Slow response times
       - alert: SlowResponses
@@ -471,7 +471,7 @@ groups:
           severity: warning
         annotations:
           summary: "Slow response times"
-          description: "95th percentile latency is {{ $value }}s"
+          description: "95th percentile latency is {% raw %}{{ $value }}{% endraw %}s"
 
       # Ollama service down
       - alert: OllamaDown

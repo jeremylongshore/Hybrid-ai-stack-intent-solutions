@@ -99,6 +99,7 @@ flowchart TD
 
 **File:** `workflows/smart_routing.json`
 
+{% raw %}
 ```json
 {
   "name": "Smart AI Request Routing",
@@ -219,6 +220,7 @@ flowchart TD
   }
 }
 ```
+{% endraw %}
 
 ### How to Import
 
@@ -268,6 +270,7 @@ flowchart TD
 
 **File:** `workflows/cost_monitor.json`
 
+{% raw %}
 ```json
 {
   "name": "Cost Monitoring & Alerts",
@@ -378,6 +381,7 @@ flowchart TD
   }
 }
 ```
+{% endraw %}
 
 ---
 
@@ -393,6 +397,7 @@ Track model performance metrics and generate weekly reports.
 - Cost per request
 
 ### Implementation
+{% raw %}
 
 ```json
 {
@@ -442,6 +447,7 @@ Track model performance metrics and generate weekly reports.
   ]
 }
 ```
+{% endraw %}
 
 ---
 
@@ -466,6 +472,7 @@ graph TB
 ```
 
 ### Use Case: Content Research Pipeline
+{% raw %}
 
 ```json
 {
@@ -531,6 +538,7 @@ graph TB
 ```
 
 **Test it:**
+{% endraw %}
 ```bash
 curl -X POST http://localhost:5678/webhook/research \
   -H "Content-Type: application/json" \
@@ -580,6 +588,7 @@ return {
 ### 1. Error Handling
 
 ```json
+{% raw %}
 {
   "parameters": {
     "rules": {
@@ -603,10 +612,12 @@ return {
 ```
 
 ### 2. Retry Logic
+{% endraw %}
 
 ```json
 {
   "parameters": {
+{% raw %}
     "maxTries": 3,
     "waitBetweenTries": 1000
   },
@@ -619,6 +630,7 @@ return {
 ### 3. Rate Limiting
 
 ```javascript
+{% endraw %}
 // Add delay between requests
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 await delay(100);  // 100ms delay
