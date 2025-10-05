@@ -1,9 +1,9 @@
 source "https://rubygems.org"
 
-gem "jekyll", "~> 4.3"
-gem "jekyll-theme-cayman"  # GitHub Pages theme
+# GitHub Pages gem includes Jekyll and all compatible plugins
+gem "github-pages", "~> 232", group: :jekyll_plugins
 
-# Jekyll plugins
+# Additional Jekyll plugins (compatible with GitHub Pages)
 group :jekyll_plugins do
   gem "jekyll-sitemap"
   gem "jekyll-seo-tag"
@@ -25,5 +25,6 @@ gem "wdm", "~> 0.1", :platforms => [:mingw, :x64_mingw, :mswin]
 # do not have a Java counterpart.
 gem "http_parser.rb", "~> 0.6.0", :platforms => [:jruby]
 
-# GitHub Pages compatibility
-gem "github-pages", group: :jekyll_plugins
+# Required for Ruby 3.4+ compatibility
+gem "csv"
+gem "base64"
