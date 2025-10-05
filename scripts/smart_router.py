@@ -44,6 +44,23 @@ class SmartRouter:
             'cost_per_token': 0.0,  # Free (local)
             'endpoint': 'http://localhost:11434/api/generate'
         },
+        # NEW: Ternary models (BitNet 1.58-bit)
+        'bitnet-2b': {
+            'backend': 'ternary',
+            'max_complexity': 0.5,
+            'cost_per_token': 0.0,  # Free (local)
+            'endpoint': 'http://localhost:8003/generate',
+            'speed_multiplier': 6.0,  # 6x faster than standard
+            'energy_savings': 0.82  # 82% energy reduction
+        },
+        'mistral-7b-ternary': {
+            'backend': 'ternary',
+            'max_complexity': 0.8,
+            'cost_per_token': 0.0,  # Free (local)
+            'endpoint': 'http://localhost:8003/generate',
+            'speed_multiplier': 6.0,
+            'energy_savings': 0.82
+        },
         'claude-sonnet': {
             'backend': 'cloud',
             'max_complexity': 1.0,
@@ -71,11 +88,21 @@ class SmartRouter:
         r'[{}\[\]();]',  # Code-like syntax
     ]
 
-    def __init__(self, use_local: bool = True, complexity_threshold: float = 0.5):
+    def __init__(self, use_local: bool = True, complexity_threshold: float = 0.5, use_ternary: bool = True):
         """Initialize router with configuration"""
         self.use_local = use_local
         self.complexity_threshold = complexity_threshold
+        self.use_ternary = use_ternary
+        self.ternary_available = False
         self.anthropic_client = None
+
+        # Check if ternary runtime is available
+        if self.use_ternary:
+            self.ternary_available = self._check_ternary_available()
+            if self.ternary_available:
+                logger.info("✅ Ternary runtime detected and available")
+            else:
+                logger.info("ℹ️  Ternary runtime not available, using standard models")
 
         # Initialize Anthropic client if API key available
         api_key = os.getenv('ANTHROPIC_API_KEY')
@@ -83,6 +110,18 @@ class SmartRouter:
             self.anthropic_client = Anthropic(api_key=api_key)
         else:
             logger.warning("ANTHROPIC_API_KEY not set - cloud routing disabled")
+
+    def _check_ternary_available(self) -> bool:
+        """Check if ternary runtime is installed and running"""
+        try:
+            ternary_url = os.getenv('TERNARY_URL', 'http://localhost:8003')
+            response = requests.get(f"{ternary_url}/health", timeout=2)
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('ternary', False)
+            return False
+        except:
+            return False
 
     def estimate_complexity(self, prompt: str) -> Tuple[float, str]:
         """
@@ -150,7 +189,16 @@ class SmartRouter:
 
     def select_model(self, complexity: float) -> str:
         """Select optimal model based on complexity"""
-        if not self.use_local or complexity > 0.6:
+        # Ternary-optimized routing (if available)
+        if self.ternary_available:
+            if complexity < 0.5:
+                return 'bitnet-2b'  # Fast, efficient 2B model
+            elif complexity < 0.8:
+                return 'mistral-7b-ternary'  # 7B quality, 2.5GB RAM
+            else:
+                return 'claude-sonnet'  # Ultra-complex only
+        # Standard routing (no ternary)
+        elif not self.use_local or complexity > 0.6:
             return 'claude-sonnet'
         elif complexity < 0.3:
             return 'tinyllama'
@@ -197,6 +245,36 @@ class SmartRouter:
         logger.info(f"Reasoning: {reasoning}")
 
         return decision
+
+    def execute_ternary_request(self, model: str, prompt: str) -> Dict:
+        """Execute request on ternary model server (BitNet)"""
+        ternary_url = os.getenv('TERNARY_URL', 'http://localhost:8003')
+        endpoint = f"{ternary_url}/generate"
+
+        payload = {
+            "model": model,
+            "prompt": prompt,
+            "max_tokens": 512
+        }
+
+        try:
+            response = requests.post(endpoint, json=payload, timeout=60)
+            response.raise_for_status()
+            result = response.json()
+
+            return {
+                'model': model,
+                'backend': 'ternary',
+                'response': result.get('text', ''),
+                'inference_time_ms': result.get('inference_time_ms', 0),
+                'tokens_per_second': result.get('tokens_per_second', 0),
+                'cost': 0.0,
+                'quantization': '1.58-bit'
+            }
+        except Exception as e:
+            logger.error(f"Ternary request failed: {e}, falling back to cloud")
+            # Fallback to Claude if ternary fails
+            return self.execute_claude_request(prompt)
 
     def execute_ollama_request(self, model: str, prompt: str) -> Dict:
         """Execute request on local Ollama server"""
@@ -270,7 +348,9 @@ class SmartRouter:
         decision = self.route_request(prompt)
 
         # Execute based on backend
-        if decision.backend == 'local':
+        if decision.backend == 'ternary':
+            result = self.execute_ternary_request(decision.model, prompt)
+        elif decision.backend == 'local':
             result = self.execute_ollama_request(decision.model, prompt)
         else:
             result = self.execute_claude_request(prompt)

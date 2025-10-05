@@ -139,9 +139,11 @@ services:
       - "${GATEWAY_PORT:-8080}:8080"
     environment:
       - OLLAMA_URL=http://ollama:11434
+      - TERNARY_URL=http://ternary-server:8003
       - ANTHROPIC_API_KEY
       - OPENAI_API_KEY
       - USE_LOCAL_FOR_SIMPLE
+      - USE_TERNARY=${USE_TERNARY:-false}
       - COMPLEXITY_THRESHOLD
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -154,6 +156,30 @@ services:
     volumes:
       - ./scripts:/app/scripts
       - ./prompts:/app/prompts
+
+  ternary-server:
+    profiles: ["ternary"]
+    build:
+      context: ./ternary
+      dockerfile: Dockerfile
+    hostname: ternary-server
+    container_name: ternary-server
+    networks: ['demo']
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      - BITNET_PATH=/app/bitnet.cpp
+      - MODEL_PATH=/models
+      - DEFAULT_MODEL=bitnet-2b
+    volumes:
+      - ./models/ternary:/models:ro
+      - ./scripts/ternary_server.py:/app/ternary_server.py:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   prometheus:
     image: prom/prometheus:latest
