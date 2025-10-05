@@ -6,9 +6,8 @@ description: Production-ready AI orchestration with 60-80% cost reduction throug
 baseurl: "/Hybrid-ai-stack-intent-solutions"
 url: "https://jeremylongshore.github.io"
 
-# Theme
+# Theme (GitHub Pages supported)
 theme: jekyll-theme-cayman
-#remote_theme: pmarsceill/just-the-docs  # Alternative: just-the-docs theme
 
 # Author
 author:
@@ -23,40 +22,12 @@ markdown: kramdown
 kramdown:
   input: GFM
   syntax_highlighter: rouge
-  auto_ids: true
-  toc_levels: 1..3
 
-# Plugins
+# Plugins (only GitHub Pages supported plugins)
 plugins:
   - jekyll-sitemap
   - jekyll-seo-tag
   - jekyll-github-metadata
-
-# Mermaid diagram support
-mermaid:
-  enabled: true
-
-# Collections
-collections:
-  docs:
-    output: true
-    permalink: /:collection/:path/
-
-# Defaults
-defaults:
-  - scope:
-      path: ""
-      type: "pages"
-    values:
-      layout: "default"
-  - scope:
-      path: "docs"
-      type: "docs"
-    values:
-      layout: "default"
-
-# Navigation
-nav_order: 1
 
 # Exclude from processing
 exclude:
@@ -68,27 +39,10 @@ exclude:
   - .jekyll-cache
   - .gitignore
 
-# Include
-include:
-  - _pages
-  - assets
-
 # Social
 github_username: jeremylongshore
 
-# Google Analytics (optional)
-# google_analytics: UA-XXXXXXXX-X
-
 # SEO settings
-logo: /assets/images/logo.png  # Optional: Add logo
 twitter:
-  username: jeremylongshore  # Optional
+  username: jeremylongshore
   card: summary
-
-# Color scheme
-color_scheme: light
-
-# Aux links for the upper right navigation
-aux_links:
-  "View on GitHub":
-    - "https://github.com/jeremylongshore/Hybrid-ai-stack-intent-solutions"
