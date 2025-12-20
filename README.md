@@ -8,6 +8,12 @@
 
 A production-ready AI orchestration system that intelligently routes requests between local models (CPU-based) and cloud APIs to optimize costs. Run lightweight models locally for simple tasks, use cloud APIs only for complex tasks.
 
+## Directory Standards
+
+This project follows the MASTER DIRECTORY STANDARDS.
+See `.directory-standards.md` for details.
+All documentation is stored in `01-Docs/` using the `NNN-abv-description.ext` format.
+
 ## Features
 
 - **Smart Request Routing** - Automatically estimates prompt complexity and routes to the optimal model

@@ -1,3 +1,14 @@
+## Task Tracking (Beads / bd)
+- Use `bd` for ALL tasks/issues (no markdown TODO lists).
+- Start of session: `bd ready`
+- Create work: `bd create "Title" -p 1 --description "Context + acceptance criteria"`
+- Update status: `bd update <id> --status in_progress`
+- Finish: `bd close <id> --reason "Done"`
+- End of session: `bd sync` (flush/import/export + git sync)
+- Manual testing safety:
+  - Prefer `BEADS_DIR` to isolate a workspace if needed. (`BEADS_DB` exists but is deprecated.)
+
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -7,6 +18,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Hybrid AI Stack** is a production-ready AI orchestration system that intelligently routes requests between local CPU-based models and cloud APIs to achieve 60-80% cost reduction. The system uses multi-factor complexity estimation to automatically select the optimal model for each request.
 
 **Repository**: https://github.com/jeremylongshore/Hybrid-ai-stack-intent-solutions
+
+## Directory Standards
+
+Follow `.directory-standards.md` for structure and file naming.
+- Store all docs in `01-Docs/`
+- Use `NNN-abv-description.ext` format with approved abbreviations
+- Maintain strict chronological order
 
 ## Project Purpose
 
