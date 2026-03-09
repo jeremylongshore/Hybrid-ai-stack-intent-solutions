@@ -72,3 +72,7 @@ temp/
 # Credentials
 credentials.json
 service-account.json
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
