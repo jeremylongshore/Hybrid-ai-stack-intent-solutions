@@ -47,3 +47,9 @@ variable "use_elastic_ip" {
   type        = bool
   default     = false
 }
+
+variable "allowed_ssh_cidr" {
+  description = "CIDR block allowed to SSH (restrict to your IP, e.g. 203.0.113.0/32)"
+  type        = string
+  default     = "0.0.0.0/0"
+}

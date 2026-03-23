@@ -32,7 +32,7 @@ log_success() {
 }
 
 log_warning() {
-    echo -e "${YELLOW}[ ]${NC} $1"
+    echo -e "${YELLOW}[ï¿½]${NC} $1"
 }
 
 log_error() {
@@ -40,7 +40,7 @@ log_error() {
 }
 
 show_progress() {
-    echo -e "${YELLOW}[ó]${NC} $1..."
+    echo -e "${YELLOW}[ï¿½]${NC} $1..."
 }
 
 # Banner
@@ -261,10 +261,19 @@ deploy_cloud() {
 
     log_info "Starting $provider deployment with Terraform..."
 
-    cd terraform/$provider || {
-        log_error "Terraform configuration not found for $provider"
+    if [ ! -d "terraform/$provider" ]; then
+        log_error "Terraform directory not found for $provider"
         exit 1
-    }
+    fi
+
+    # Check for .tf files before proceeding
+    if ! ls terraform/$provider/*.tf >/dev/null 2>&1; then
+        log_error "No Terraform (.tf) files found in terraform/$provider/"
+        log_error "GCP deployment is not yet configured. Use 'aws' or 'docker' instead."
+        exit 1
+    fi
+
+    cd terraform/$provider
 
     # Initialize Terraform
     show_progress "Initializing Terraform"
@@ -301,13 +310,6 @@ deploy_cloud() {
         # Wait for instance to be ready
         show_progress "Waiting for instance to boot (60s)"
         sleep 60
-
-        # Run Ansible playbook if available
-        if [ -f ansible/deploy.yml ]; then
-            log_info "Running Ansible playbook..."
-            ansible-playbook -i "${INSTANCE_IP}," ansible/deploy.yml
-            log_success "Ansible deployment complete"
-        fi
     fi
 }
 
@@ -336,36 +338,36 @@ echo
 
 if [[ "$DEPLOYMENT_TYPE" == "docker" ]]; then
     cat << EOF
-<‰ Your Hybrid AI Stack is now running!
+<ï¿½ Your Hybrid AI Stack is now running!
 
-=Ê Access URLs:
+=ï¿½ Access URLs:
    " API Gateway:  http://localhost:8080
    " n8n:         http://localhost:5678
    " Grafana:     http://localhost:3000 (admin/admin)
    " Prometheus:  http://localhost:9090
 
->ê Test the API:
+>ï¿½ Test the API:
    curl -X POST http://localhost:8080/api/v1/chat \\
      -H "Content-Type: application/json" \\
      -d '{"prompt": "What is Python?"}'
 
-=È Check stats:
+=ï¿½ Check stats:
    curl http://localhost:8080/api/v1/stats
 
-=Ñ Stop services:
+=ï¿½ Stop services:
    docker-compose down
 
-=Ë View logs:
+=ï¿½ View logs:
    docker-compose logs -f [service-name]
 
 EOF
 else
     cat << EOF
-<‰ Your Hybrid AI Stack is deployed to $DEPLOYMENT_TYPE!
+<ï¿½ Your Hybrid AI Stack is deployed to $DEPLOYMENT_TYPE!
 
 = Instance IP: $INSTANCE_IP
 
-=Ý Next steps:
+=ï¿½ Next steps:
    1. SSH to instance: ssh ubuntu@$INSTANCE_IP
    2. Check services: docker-compose ps
    3. View logs: docker-compose logs -f
@@ -389,4 +391,4 @@ if [ -n "$DEPLOY_TASK_ID" ]; then
 fi
 
 echo
-log_success "Deployment complete! =€"
+log_success "Deployment complete! =ï¿½"

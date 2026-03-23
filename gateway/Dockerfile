@@ -20,5 +20,8 @@ RUN mkdir -p /app/scripts /app/prompts
 # Expose port
 EXPOSE 8080
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
+
 # Run with gunicorn for production
 CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "4", "--timeout", "120", "app:app"]

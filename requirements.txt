@@ -10,6 +10,7 @@ requests==2.32.3
 # Web Framework (API Gateway)
 flask==3.1.0
 flask-cors==5.0.0
+flask-limiter==3.8.0
 gunicorn==23.0.0
 
 # Data Processing
@@ -34,6 +35,9 @@ mypy==1.13.0
 
 # Redis (for caching)
 redis==5.2.0
+
+# Token counting
+tiktoken==0.8.0
 
 # Prometheus Client (for metrics)
 prometheus-client==0.21.0
