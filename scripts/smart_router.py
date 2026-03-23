@@ -8,11 +8,18 @@ import os
 import re
 import json
 import logging
+import subprocess
 from datetime import datetime
 from typing import Dict, Tuple
 from dataclasses import dataclass
 import requests
 from anthropic import Anthropic
+
+try:
+    import tiktoken
+    _tiktoken_encoding = tiktoken.get_encoding("cl100k_base")
+except ImportError:
+    _tiktoken_encoding = None
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -95,14 +102,16 @@ class SmartRouter:
         self.use_ternary = use_ternary
         self.ternary_available = False
         self.anthropic_client = None
+        self.claude_model = os.getenv('CLAUDE_MODEL', 'claude-sonnet-4-20250514')
+        self.taskwarrior_enabled = os.getenv('ENABLE_TASKWARRIOR_LOGGING', 'false').lower() == 'true'
 
         # Check if ternary runtime is available
         if self.use_ternary:
             self.ternary_available = self._check_ternary_available()
             if self.ternary_available:
-                logger.info("✅ Ternary runtime detected and available")
+                logger.info("Ternary runtime detected and available")
             else:
-                logger.info("ℹ️  Ternary runtime not available, using standard models")
+                logger.info("Ternary runtime not available, using standard models")
 
         # Initialize Anthropic client if API key available
         api_key = os.getenv('ANTHROPIC_API_KEY')
@@ -205,14 +214,20 @@ class SmartRouter:
         else:
             return 'phi2'
 
+    @staticmethod
+    def _count_tokens(text: str) -> int:
+        """Count tokens using tiktoken (cl100k_base), with fallback to len//4."""
+        if _tiktoken_encoding is not None:
+            return len(_tiktoken_encoding.encode(text))
+        return len(text) // 4
+
     def estimate_cost(self, prompt: str, model: str, response_length: int = 500) -> float:
         """Estimate cost for request"""
         model_config = self.MODELS.get(model)
-        if not model_config or model_config['backend'] == 'local':
+        if not model_config or model_config['backend'] in ('local', 'ternary'):
             return 0.0
 
-        # Rough token estimation (4 chars H 1 token)
-        prompt_tokens = len(prompt) / 4
+        prompt_tokens = self._count_tokens(prompt)
         total_tokens = prompt_tokens + response_length
 
         cost = total_tokens * model_config['cost_per_token']
@@ -317,7 +332,7 @@ class SmartRouter:
 
         try:
             message = self.anthropic_client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model=self.claude_model,
                 max_tokens=1024,
                 messages=[{"role": "user", "content": prompt}]
             )
@@ -369,18 +384,17 @@ class SmartRouter:
 
     def log_to_taskwarrior(self, decision: RoutingDecision, result: Dict):
         """Log routing decision to Taskwarrior"""
+        if not self.taskwarrior_enabled:
+            return
         try:
-            annotation = (
-                f"Model: {decision.model}, "
-                f"Complexity: {decision.complexity:.2f}, "
-                f"Cost: ${result.get('cost', 0):.6f}"
-            )
-
-            # Create task in Taskwarrior
-            os.system(
-                f'task add "AI Request: {decision.model}" '
-                f'project:vps_ai.router +routing '
-                f'"{annotation}" 2>/dev/null'
+            backend_tag = '+ternary' if decision.backend == 'ternary' else '+routing'
+            description = f"AI Request: {decision.model}"
+            subprocess.run(
+                [
+                    'task', 'add', description,
+                    f'project:vps_ai.router', backend_tag,
+                ],
+                capture_output=True, check=False
             )
         except Exception as e:
             logger.debug(f"Taskwarrior logging failed: {e}")
@@ -388,8 +402,6 @@ class SmartRouter:
     def get_stats(self) -> Dict:
         """Get routing statistics (from Taskwarrior)"""
         try:
-            # Query Taskwarrior for stats
-            import subprocess
             result = subprocess.run(
                 ['task', 'project:vps_ai.router', 'export'],
                 capture_output=True,
@@ -399,20 +411,44 @@ class SmartRouter:
             if result.returncode == 0 and result.stdout:
                 tasks = json.loads(result.stdout)
 
-                total_requests = len(tasks)
-                local_requests = sum(1 for t in tasks if 'tinyllama' in str(t) or 'phi2' in str(t))
-                cloud_requests = sum(1 for t in tasks if 'claude' in str(t))
+                prefix = "AI Request: "
+                local_requests = 0
+                cloud_requests = 0
+                ternary_requests = 0
 
+                for t in tasks:
+                    desc = t.get('description', '')
+                    if not desc.startswith(prefix):
+                        continue
+                    model_name = desc[len(prefix):]
+                    model_config = self.MODELS.get(model_name)
+                    if not model_config:
+                        continue
+                    backend = model_config['backend']
+                    if backend == 'local':
+                        local_requests += 1
+                    elif backend == 'ternary':
+                        ternary_requests += 1
+                    elif backend == 'cloud':
+                        cloud_requests += 1
+
+                total_requests = local_requests + cloud_requests + ternary_requests
                 return {
                     'total_requests': total_requests,
                     'local_requests': local_requests,
                     'cloud_requests': cloud_requests,
-                    'local_percentage': (local_requests / total_requests * 100) if total_requests > 0 else 0
+                    'ternary_requests': ternary_requests,
+                    'local_percentage': (
+                        (local_requests + ternary_requests) / total_requests * 100
+                    ) if total_requests > 0 else 0,
                 }
-        except:
+        except Exception:
             pass
 
-        return {'total_requests': 0, 'local_requests': 0, 'cloud_requests': 0, 'local_percentage': 0}
+        return {
+            'total_requests': 0, 'local_requests': 0, 'cloud_requests': 0,
+            'ternary_requests': 0, 'local_percentage': 0,
+        }
 
 
 def main():

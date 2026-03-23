@@ -1,0 +1,35 @@
+groups:
+  - name: hybrid-ai-stack
+    rules:
+      - alert: GatewayDown
+        expr: up{job="api-gateway"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API Gateway is down"
+          description: "api-gateway:8080 has been unreachable for more than 2 minutes."
+
+      - alert: HighErrorRate
+        expr: >
+          (
+            sum(rate(api_gateway_requests_total{status="error"}[5m]))
+            /
+            sum(rate(api_gateway_requests_total[5m]))
+          ) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP error rate"
+          description: "More than 10% of requests are returning errors for the last 5 minutes."
+
+      - alert: CloudCostSpike
+        expr: >
+          sum(rate(api_gateway_cost_total[1h])) * 3600 > 0.50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cloud API cost spike"
+          description: "Estimated cloud API spend exceeds $0.50/hour."

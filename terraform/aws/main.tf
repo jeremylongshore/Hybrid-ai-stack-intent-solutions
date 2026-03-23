@@ -28,23 +28,15 @@ data "aws_ami" "ubuntu" {
 
 # Security Group
 resource "aws_security_group" "hybrid_ai_stack" {
-  name_description = "Hybrid AI Stack Security Group"
-  description = "Allow SSH, n8n, API Gateway, and monitoring ports"
+  name        = "hybrid-ai-stack-sg"
+  description = "Hybrid AI Stack - SSH restricted, API Gateway public, n8n/Grafana via SSH tunnel"
 
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "SSH"
-  }
-
-  ingress {
-    from_port   = 5678
-    to_port     = 5678
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "n8n"
+    cidr_blocks = [var.allowed_ssh_cidr]
+    description = "SSH - restricted"
   }
 
   ingress {
@@ -55,13 +47,7 @@ resource "aws_security_group" "hybrid_ai_stack" {
     description = "API Gateway"
   }
 
-  ingress {
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Grafana"
-  }
+  # n8n (5678) and Grafana (3000) intentionally omitted — access via SSH tunnel
 
   egress {
     from_port   = 0
