@@ -5,6 +5,77 @@ All notable changes to the Hybrid AI Stack project will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-03-23
+
+### Added
+- **Redis Response Caching** - Exact-match caching with configurable TTL (#3)
+  - SHA-256 hash of prompt + model for cache key
+  - `CACHE_TTL_SECONDS` environment variable (default 3600)
+  - `"cached": true/false` in response JSON
+  - `Cache-Control: no-cache` header support to bypass cache
+  - Prometheus cache hit/miss counters
+- **Model Listing Endpoint** - `GET /api/v1/models` (#3)
+  - Returns all available models with name, backend, availability status
+  - Checks Ollama `/api/tags`, ternary health, Claude API key presence
+  - Cost per token and max complexity for each model
+- **Rate Limiting** - flask-limiter integration (#3)
+  - Default 60 requests/minute per IP (`RATE_LIMIT` env var)
+  - 429 response with `Retry-After` header
+  - Redis-backed when available, memory fallback
+- **Prompt Validation** - Reject oversized prompts (#3)
+  - 413 response for prompts >100k characters
+- **Tiktoken Token Counting** - Accurate cost estimation (#3)
+  - Uses `cl100k_base` encoding (same as Claude)
+  - Fallback to `len(text) // 4` if tiktoken unavailable
+  - Fixes 20-40% cost estimation error
+- **Comprehensive Test Suite** - 54 tests (was 9, 3 broken) (#3)
+  - `tests/test_gateway.py`: 18 Flask endpoint tests
+  - `tests/test_router.py`: Ternary routing, error paths, stats parsing
+  - Coverage: gateway 84%, smart_router 77%
+- **Prometheus Alert Rules** - `configs/alert-rules.yml` (#3)
+  - GatewayDown: 2 minute threshold
+  - HighErrorRate: >10% for 5 minutes
+  - CloudCostSpike: >$0.50/hour
+- **CI/CD Pipeline** - `.github/workflows/ci.yml` (#3)
+  - pytest, flake8, docker build on push/PR to main
+- **OSS Readiness Files** - SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md (#2)
+
+### Fixed
+- **Shell Injection Vulnerability** - Taskwarrior logging now uses `subprocess.run` with list args (#3)
+- **Gateway Rejects Ternary Models** - Manual override with `"model": "bitnet-2b"` now works (#3)
+- **Ollama Health Check Incomplete** - Now verifies models are actually pulled (#3)
+- **Taskwarrior Stats Parsing** - Uses description prefix matching, counts ternary (#3)
+- **Prometheus Redis Scrape** - Removed broken redis:6379 and n8n:5678 targets (#3)
+
+### Changed
+- **Configurable Claude Model** - `CLAUDE_MODEL` env var (default `claude-sonnet-4-20250514`) (#3)
+- **Taskwarrior Logging Opt-in** - Disabled by default, enable via `ENABLE_TASKWARRIOR_LOGGING=true` (#3)
+- **API Gateway Version** - Bumped to 1.1.0 in index response (#3)
+
+### Security
+- **AWS Security Groups Hardened** - SSH restricted to `allowed_ssh_cidr`, n8n/Grafana removed from public (#3)
+- **Dead Code Removed** - Ansible references removed from deploy-all.sh (#3)
+
+### Docker
+- **API Gateway Healthcheck** - Dockerfile + compose healthcheck using urllib (#3)
+- **Ollama Model Pull Race Condition** - Proper wait loop, `depends_on: service_completed_successfully` (#3)
+- **Container Name Collisions** - Fixed in ollama anchor (#3)
+- **Resource Limits** - Memory/CPU limits on all 8 services (#3)
+
+## Release Metrics (v1.2.0)
+
+| Metric | Value |
+|--------|-------|
+| **Commits** | 6 |
+| **Files Changed** | 65 |
+| **Lines Added** | +2,606 |
+| **Lines Removed** | -181 |
+| **New Tests** | 45 (54 total, was 9) |
+| **Test Coverage** | gateway 84%, router 77% |
+| **New Endpoints** | 1 (GET /api/v1/models) |
+| **Security Fixes** | 2 (shell injection, AWS SG) |
+| **Bug Fixes** | 5 |
+
 ## [1.1.0] - 2025-10-05
 
 ### Added
@@ -129,5 +200,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.2.0]: https://github.com/jeremylongshore/Hybrid-ai-stack-intent-solutions/releases/tag/v1.2.0
 [1.1.0]: https://github.com/jeremylongshore/Hybrid-ai-stack-intent-solutions/releases/tag/v1.1.0
 [1.0.0]: https://github.com/jeremylongshore/Hybrid-ai-stack-intent-solutions/releases/tag/v1.0.0
