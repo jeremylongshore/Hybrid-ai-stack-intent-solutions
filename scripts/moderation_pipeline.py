@@ -129,7 +129,7 @@ Be thorough and explain your reasoning.
         print("CONTENT MODERATION SUMMARY")
         print("=" * 60)
         print(f"Total Posts Processed: {summary['total_processed']}")
-        print(f"   Safe (local):      {summary['local_safe']}")
+        print(f"    Safe (local):      {summary['local_safe']}")
         print(f"    Flagged (cloud):   {summary['cloud_reviewed']}")
         print()
         print("COST COMPARISON:")
@@ -186,7 +186,7 @@ def demo():
     print("    50 flagged (cloud) = $0.75")
     print("    Total = $0.75")
     print()
-    print("  = deg Savings: $14.25 (95% reduction)")
+    print("  ~ Savings: $14.25 (95% reduction)")
     print("=" * 60)
 
 

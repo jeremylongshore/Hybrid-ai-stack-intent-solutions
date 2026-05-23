@@ -177,8 +177,8 @@ Offer specific solutions or next steps.
         print("CUSTOMER SUPPORT ROUTER SUMMARY")
         print("=" * 60)
         print(f"Total Queries: {stats['total_queries']}")
-        print(f"   Handled by FAQ (local):  {stats['faq_handled']} ({stats['faq_percentage']:.1f}%)")
-        print(f"   Escalated to Expert:     {stats['escalated']} ({100 - stats['faq_percentage']:.1f}%)")
+        print(f"    Handled by FAQ (local):  {stats['faq_handled']} ({stats['faq_percentage']:.1f}%)")
+        print(f"    Escalated to Expert:     {stats['escalated']} ({100 - stats['faq_percentage']:.1f}%)")
         print()
         print("COST COMPARISON:")
         print(f"  Cloud Only:  ${stats['cloud_only_cost']:.4f}")
@@ -235,7 +235,7 @@ def demo():
     print("    3,000 complex (cloud) = $30.00")
     print("    Total = $30.00/month")
     print()
-    print("  = deg Savings: $70.00/month (70% reduction)")
+    print("  ~ Savings: $70.00/month (70% reduction)")
     print("=" * 60)
 
 

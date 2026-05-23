@@ -429,7 +429,7 @@ class SmartRouter:
                     desc = t.get("description", "")
                     if not desc.startswith(prefix):
                         continue
-                    model_name = desc[len(prefix):]  # noqa: E203
+                    model_name = desc[len(prefix):]
                     model_config = self.MODELS.get(model_name)
                     if not model_config:
                         continue
