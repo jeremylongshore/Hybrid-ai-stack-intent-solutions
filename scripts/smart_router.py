@@ -9,7 +9,6 @@ import re
 import json
 import logging
 import subprocess
-from datetime import datetime
 from typing import Dict, Tuple
 from dataclasses import dataclass
 import requests
@@ -25,6 +24,7 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class RoutingDecision:
     """Routing decision with metadata"""
@@ -33,6 +33,7 @@ class RoutingDecision:
     estimated_cost: float
     reasoning: str
     backend: str  # 'local' or 'cloud'
+
 
 class SmartRouter:
     """Intelligent router for AI requests"""
@@ -129,7 +130,7 @@ class SmartRouter:
                 data = response.json()
                 return data.get('ternary', False)
             return False
-        except:
+        except Exception:
             return False
 
     def estimate_complexity(self, prompt: str) -> Tuple[float, str]:
@@ -171,7 +172,7 @@ class SmartRouter:
 
         # Factor 3: Code detection
         code_matches = sum(1 for pattern in self.CODE_PATTERNS
-                          if re.search(pattern, prompt))
+                           if re.search(pattern, prompt))
         if code_matches >= 2:
             code_score = 0.3
             factors.append("contains code")
@@ -392,7 +393,7 @@ class SmartRouter:
             subprocess.run(
                 [
                     'task', 'add', description,
-                    f'project:vps_ai.router', backend_tag,
+                    'project:vps_ai.router', backend_tag,
                 ],
                 capture_output=True, check=False
             )
@@ -480,7 +481,7 @@ def main():
 
     # Show stats
     stats = router.get_stats()
-    print(f"\nRouting Stats:")
+    print("\nRouting Stats:")
     print(f"  Total requests: {stats['total_requests']}")
     print(f"  Local: {stats['local_requests']} ({stats['local_percentage']:.1f}%)")
     print(f"  Cloud: {stats['cloud_requests']}")

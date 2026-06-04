@@ -6,7 +6,7 @@ Demonstrates how using local models for initial classification can reduce costs
 by 90%+ compared to cloud-only approaches.
 
 Cost Comparison:
-- Cloud Only:  1000 posts × $0.015/analysis = $15.00
+- Cloud Only:  1000 posts ï¿½ $0.015/analysis = $15.00
 - Hybrid:      950 safe (local) + 50 flagged (cloud) = $0.75
   Savings: $14.25 (95% reduction)
 """
@@ -17,7 +17,8 @@ from typing import Dict, Tuple
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from smart_router import SmartRouter
+from smart_router import SmartRouter  # noqa: E402  (import requires sys.path insert above)
+
 
 class ContentModerator:
     """
@@ -138,7 +139,7 @@ Be thorough and explain your reasoning.
         print("="*60)
         print(f"Total Posts Processed: {summary['total_processed']}")
         print(f"   Safe (local):      {summary['local_safe']}")
-        print(f"    Flagged (cloud):   {summary['cloud_reviewed']}")
+        print(f"  ï¿½ Flagged (cloud):   {summary['cloud_reviewed']}")
         print()
         print("COST COMPARISON:")
         print(f"  Cloud Only:  ${summary['cloud_only_cost']:.4f}")
@@ -176,7 +177,7 @@ def demo():
         print(f"  Cost: ${result['cost']:.6f}")
 
         if result['status'] == 'needs_review':
-            print(f"  Review Required!")
+            print("  Review Required!")
 
     # Print final summary
     moderator.print_summary()
@@ -187,14 +188,14 @@ def demo():
     print("Assuming 95% safe content, 5% flagged:")
     print()
     print("  Cloud Only Approach:")
-    print("    1000 posts × $0.015 = $15.00")
+    print("    1000 posts ï¿½ $0.015 = $15.00")
     print()
     print("  Hybrid Approach:")
     print("    950 safe (local) =  $0.00")
     print("    50 flagged (cloud) = $0.75")
     print("    Total = $0.75")
     print()
-    print("  =° Savings: $14.25 (95% reduction)")
+    print("  =ï¿½ Savings: $14.25 (95% reduction)")
     print("="*60)
 
 

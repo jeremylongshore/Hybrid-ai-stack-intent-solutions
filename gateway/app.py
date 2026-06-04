@@ -21,7 +21,7 @@ import redis
 
 # Add parent directory to path to import smart_router
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
-from smart_router import SmartRouter
+from smart_router import SmartRouter  # noqa: E402  (import requires sys.path insert above)
 
 # Load environment variables
 load_dotenv()
