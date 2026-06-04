@@ -35,6 +35,7 @@ MODELS = {
     'falcon3-3b': 'falcon3-3b/ggml-model-i2_s.gguf',
 }
 
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
@@ -53,6 +54,7 @@ def health():
         "bitnet_path": BITNET_PATH,
         "model_path": MODEL_PATH
     })
+
 
 @app.route('/generate', methods=['POST'])
 def generate():
@@ -150,6 +152,7 @@ def generate():
         logger.error(f"Inference error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/models', methods=['GET'])
 def list_models():
     """List available models"""
@@ -171,6 +174,7 @@ def list_models():
         "count": len(available)
     })
 
+
 if __name__ == '__main__':
     # Verify BitNet installation
     if not Path(BITNET_PATH).exists():
@@ -182,7 +186,7 @@ if __name__ == '__main__':
         logger.warning(f"Model directory not found: {MODEL_PATH}")
         logger.warning("Run ./scripts/download_ternary_models.sh to download models")
 
-    logger.info(f"Starting Ternary Model Server")
+    logger.info("Starting Ternary Model Server")
     logger.info(f"BitNet path: {BITNET_PATH}")
     logger.info(f"Model path: {MODEL_PATH}")
 

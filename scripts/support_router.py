@@ -6,18 +6,19 @@ Demonstrates intelligent routing for customer support queries.
 Simple FAQ-style questions handled locally, complex issues escalated to Claude.
 
 Cost Comparison (10,000 queries/month):
-- Cloud Only:  10,000 × $0.01 avg = $100/month
+- Cloud Only:  10,000 ï¿½ $0.01 avg = $100/month
 - Hybrid:      7,000 local + 3,000 cloud = $30/month
   Savings: $70/month (70% reduction)
 """
 
 import sys
 import os
-from typing import Dict, List
+from typing import Dict
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from smart_router import SmartRouter
+from smart_router import SmartRouter  # noqa: E402  (import requires sys.path insert above)
+
 
 class SupportRouter:
     """
@@ -82,7 +83,7 @@ If the question isn't covered, say "I need to escalate this to a specialist."
             'handled_by': 'local_faq',
             'model': 'phi2',
             'cost': 0.0,
-            'confidence': 'high' if not 'escalate' in result['response'].lower() else 'low'
+            'confidence': 'high' if 'escalate' not in result['response'].lower() else 'low'
         }
 
     def escalate_to_expert(self, query: str, context: str = "") -> Dict:
@@ -218,14 +219,14 @@ def demo():
     print("Assuming 70% FAQ, 30% complex:")
     print()
     print("  Cloud Only Approach:")
-    print("    10,000 queries × $0.01 = $100.00/month")
+    print("    10,000 queries ï¿½ $0.01 = $100.00/month")
     print()
     print("  Hybrid Approach:")
     print("    7,000 FAQ (local) =      $0.00")
     print("    3,000 complex (cloud) = $30.00")
     print("    Total = $30.00/month")
     print()
-    print("  =° Savings: $70.00/month (70% reduction)")
+    print("  =ï¿½ Savings: $70.00/month (70% reduction)")
     print("="*60)
 
 

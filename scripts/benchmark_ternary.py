@@ -7,9 +7,9 @@ Measures inference speed, latency, and cost comparison
 import requests
 import time
 import statistics
-from typing import Dict, List
+from typing import List
 from dataclasses import dataclass
-import json
+
 
 @dataclass
 class BenchmarkResult:
@@ -20,6 +20,7 @@ class BenchmarkResult:
     tokens_per_second: float
     success: bool
     error: str = ""
+
 
 # Test prompts covering different complexity levels
 TEST_PROMPTS = {
@@ -39,6 +40,7 @@ TEST_PROMPTS = {
         "Design a microservices architecture for an e-commerce platform.",
     ]
 }
+
 
 def benchmark_model(endpoint: str, model: str, prompt: str, timeout: int = 60) -> BenchmarkResult:
     """Benchmark a single request"""
@@ -85,6 +87,7 @@ def benchmark_model(endpoint: str, model: str, prompt: str, timeout: int = 60) -
             success=False,
             error=str(e)
         )
+
 
 def run_benchmarks():
     """Run comprehensive benchmark suite"""
@@ -139,7 +142,10 @@ def run_benchmarks():
                 all_results.append(result)
 
                 if result.success:
-                    print(f"    ✅ {model_config['name']:30s}: {result.time_seconds:5.2f}s ({result.tokens_per_second:5.1f} tok/s)")
+                    print(
+                        f"    ✅ {model_config['name']:30s}: "
+                        f"{result.time_seconds:5.2f}s ({result.tokens_per_second:5.1f} tok/s)"
+                    )
                 else:
                     print(f"    ❌ {model_config['name']:30s}: FAILED - {result.error}")
 
@@ -157,8 +163,10 @@ def run_benchmarks():
             times = [r.time_seconds for r in model_results]
             tps = [r.tokens_per_second for r in model_results]
 
+            total_per_model = len(all_results) // len(models_to_test)
+            success_pct = len(model_results) / total_per_model * 100 if total_per_model else 0
             print(f"\n{model_config['name']}:")
-            print(f"  Success rate: {len(model_results)}/{len(all_results) // len(models_to_test)} ({len(model_results) / (len(all_results) // len(models_to_test)) * 100:.1f}%)")
+            print(f"  Success rate: {len(model_results)}/{total_per_model} ({success_pct:.1f}%)")
             print(f"  Avg time:     {statistics.mean(times):.2f}s (min: {min(times):.2f}s, max: {max(times):.2f}s)")
             print(f"  Avg tok/s:    {statistics.mean(tps):.1f} (min: {min(tps):.1f}, max: {max(tps):.1f})")
             print(f"  Median time:  {statistics.median(times):.2f}s")
@@ -180,7 +188,7 @@ def run_benchmarks():
         phi_avg_time = statistics.mean([r.time_seconds for r in phi_results])
         speedup = phi_avg_time / bitnet_avg_time if bitnet_avg_time > 0 else 0
 
-        print(f"\nBitNet 2B vs Phi-2 (2.7B):")
+        print("\nBitNet 2B vs Phi-2 (2.7B):")
         print(f"  BitNet avg: {bitnet_avg_time:.2f}s")
         print(f"  Phi-2 avg:  {phi_avg_time:.2f}s")
         print(f"  Speedup:    {speedup:.2f}x {'FASTER' if speedup > 1 else 'SLOWER'}")
@@ -193,7 +201,7 @@ def run_benchmarks():
         mistral_avg_time = statistics.mean([r.time_seconds for r in mistral_ternary_results])
         tiny_avg_time = statistics.mean([r.time_seconds for r in tinyllama_results])
 
-        print(f"\nMistral-7B (Ternary) vs TinyLlama:")
+        print("\nMistral-7B (Ternary) vs TinyLlama:")
         print(f"  Mistral-7B ternary: {mistral_avg_time:.2f}s (better quality, larger model)")
         print(f"  TinyLlama:          {tiny_avg_time:.2f}s")
 
@@ -205,6 +213,7 @@ def run_benchmarks():
     print("  - 82% energy reduction compared to FP16 models")
     print("  - Run 7B models on 8GB RAM (vs 28GB standard)")
     print("=" * 70)
+
 
 if __name__ == "__main__":
     try:
