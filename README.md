@@ -6,6 +6,8 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://www.docker.com/)
 [![Terraform](https://img.shields.io/badge/Terraform-Compatible-purple)](https://www.terraform.io/)
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/U5S225PTME)
+
 A production-ready AI orchestration system that intelligently routes requests between local models (CPU-based) and cloud APIs to optimize costs. Run lightweight models locally for simple tasks, use cloud APIs only for complex tasks.
 
 ## Directory Standards

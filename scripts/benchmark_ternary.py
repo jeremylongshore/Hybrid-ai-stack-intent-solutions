@@ -14,7 +14,6 @@ from dataclasses import dataclass
 @dataclass
 class BenchmarkResult:
     """Results from a single benchmark"""
-
     model: str
     prompt: str
     time_seconds: float
@@ -25,21 +24,21 @@ class BenchmarkResult:
 
 # Test prompts covering different complexity levels
 TEST_PROMPTS = {
-    "simple": [
+    'simple': [
         "What is the capital of France?",
         "What is 2+2?",
         "Define 'algorithm'",
     ],
-    "medium": [
+    'medium': [
         "Explain quantum computing in simple terms.",
         "What are the key differences between Python and JavaScript?",
         "Describe the HTTP request-response cycle.",
     ],
-    "complex": [
+    'complex': [
         "Write a Python function to implement quicksort with detailed comments.",
         "Explain the difference between REST and GraphQL with code examples.",
         "Design a microservices architecture for an e-commerce platform.",
-    ],
+    ]
 }
 
 
@@ -48,21 +47,25 @@ def benchmark_model(endpoint: str, model: str, prompt: str, timeout: int = 60) -
     start = time.time()
 
     try:
-        response = requests.post(endpoint, json={"prompt": prompt, "model": model, "max_tokens": 200}, timeout=timeout)
+        response = requests.post(
+            endpoint,
+            json={"prompt": prompt, "model": model, "max_tokens": 200},
+            timeout=timeout
+        )
 
         elapsed = time.time() - start
 
         if response.status_code == 200:
             data = response.json()
             # Try to extract tokens/s from response
-            tokens_per_second = data.get("tokens_per_second", 200 / elapsed if elapsed > 0 else 0)
+            tokens_per_second = data.get('tokens_per_second', 200 / elapsed if elapsed > 0 else 0)
 
             return BenchmarkResult(
                 model=model,
                 prompt=prompt[:50] + "...",
                 time_seconds=elapsed,
                 tokens_per_second=tokens_per_second,
-                success=True,
+                success=True
             )
         else:
             return BenchmarkResult(
@@ -71,7 +74,7 @@ def benchmark_model(endpoint: str, model: str, prompt: str, timeout: int = 60) -
                 time_seconds=elapsed,
                 tokens_per_second=0,
                 success=False,
-                error=f"HTTP {response.status_code}",
+                error=f"HTTP {response.status_code}"
             )
 
     except Exception as e:
@@ -82,7 +85,7 @@ def benchmark_model(endpoint: str, model: str, prompt: str, timeout: int = 60) -
             time_seconds=elapsed,
             tokens_per_second=0,
             success=False,
-            error=str(e),
+            error=str(e)
         )
 
 
@@ -95,28 +98,28 @@ def run_benchmarks():
     # Model configurations
     models_to_test = [
         {
-            "name": "TinyLlama (Standard)",
-            "endpoint": "http://localhost:11434/api/generate",
-            "model_id": "tinyllama",
-            "backend": "ollama",
+            'name': 'TinyLlama (Standard)',
+            'endpoint': 'http://localhost:11434/api/generate',
+            'model_id': 'tinyllama',
+            'backend': 'ollama'
         },
         {
-            "name": "Phi-2 (Standard)",
-            "endpoint": "http://localhost:11434/api/generate",
-            "model_id": "phi",
-            "backend": "ollama",
+            'name': 'Phi-2 (Standard)',
+            'endpoint': 'http://localhost:11434/api/generate',
+            'model_id': 'phi',
+            'backend': 'ollama'
         },
         {
-            "name": "BitNet 2B (Ternary)",
-            "endpoint": "http://localhost:8003/generate",
-            "model_id": "bitnet-2b",
-            "backend": "ternary",
+            'name': 'BitNet 2B (Ternary)',
+            'endpoint': 'http://localhost:8003/generate',
+            'model_id': 'bitnet-2b',
+            'backend': 'ternary'
         },
         {
-            "name": "Mistral-7B (Ternary)",
-            "endpoint": "http://localhost:8003/generate",
-            "model_id": "mistral-7b-ternary",
-            "backend": "ternary",
+            'name': 'Mistral-7B (Ternary)',
+            'endpoint': 'http://localhost:8003/generate',
+            'model_id': 'mistral-7b-ternary',
+            'backend': 'ternary'
         },
     ]
 
@@ -130,13 +133,18 @@ def run_benchmarks():
             print(f"\n  Prompt: {prompt[:60]}...")
 
             for model_config in models_to_test:
-                result = benchmark_model(model_config["endpoint"], model_config["model_id"], prompt)
+                result = benchmark_model(
+                    model_config['endpoint'],
+                    model_config['model_id'],
+                    prompt
+                )
 
                 all_results.append(result)
 
                 if result.success:
                     print(
-                        f"    ✅ {model_config['name']:30s}: {result.time_seconds:5.2f}s ({result.tokens_per_second:5.1f} tok/s)"  # noqa: E501
+                        f"    ✅ {model_config['name']:30s}: "
+                        f"{result.time_seconds:5.2f}s ({result.tokens_per_second:5.1f} tok/s)"
                     )
                 else:
                     print(f"    ❌ {model_config['name']:30s}: FAILED - {result.error}")
@@ -149,16 +157,16 @@ def run_benchmarks():
     print("")
 
     for model_config in models_to_test:
-        model_results = [r for r in all_results if r.model == model_config["model_id"] and r.success]
+        model_results = [r for r in all_results if r.model == model_config['model_id'] and r.success]
 
         if model_results:
             times = [r.time_seconds for r in model_results]
             tps = [r.tokens_per_second for r in model_results]
 
+            total_per_model = len(all_results) // len(models_to_test)
+            success_pct = len(model_results) / total_per_model * 100 if total_per_model else 0
             print(f"\n{model_config['name']}:")
-            print(
-                f"  Success rate: {len(model_results)}/{len(all_results) // len(models_to_test)} ({len(model_results) / (len(all_results) // len(models_to_test)) * 100:.1f}%)"  # noqa: E501
-            )
+            print(f"  Success rate: {len(model_results)}/{total_per_model} ({success_pct:.1f}%)")
             print(f"  Avg time:     {statistics.mean(times):.2f}s (min: {min(times):.2f}s, max: {max(times):.2f}s)")
             print(f"  Avg tok/s:    {statistics.mean(tps):.1f} (min: {min(tps):.1f}, max: {max(tps):.1f})")
             print(f"  Median time:  {statistics.median(times):.2f}s")
@@ -172,8 +180,8 @@ def run_benchmarks():
     print("=" * 70)
 
     # Compare BitNet 2B vs Phi-2 (similar parameter count)
-    bitnet_results = [r for r in all_results if r.model == "bitnet-2b" and r.success]
-    phi_results = [r for r in all_results if r.model == "phi" and r.success]
+    bitnet_results = [r for r in all_results if r.model == 'bitnet-2b' and r.success]
+    phi_results = [r for r in all_results if r.model == 'phi' and r.success]
 
     if bitnet_results and phi_results:
         bitnet_avg_time = statistics.mean([r.time_seconds for r in bitnet_results])
@@ -186,8 +194,8 @@ def run_benchmarks():
         print(f"  Speedup:    {speedup:.2f}x {'FASTER' if speedup > 1 else 'SLOWER'}")
 
     # Compare Mistral-7B ternary vs standard (if available)
-    mistral_ternary_results = [r for r in all_results if r.model == "mistral-7b-ternary" and r.success]
-    tinyllama_results = [r for r in all_results if r.model == "tinyllama" and r.success]
+    mistral_ternary_results = [r for r in all_results if r.model == 'mistral-7b-ternary' and r.success]
+    tinyllama_results = [r for r in all_results if r.model == 'tinyllama' and r.success]
 
     if mistral_ternary_results and tinyllama_results:
         mistral_avg_time = statistics.mean([r.time_seconds for r in mistral_ternary_results])

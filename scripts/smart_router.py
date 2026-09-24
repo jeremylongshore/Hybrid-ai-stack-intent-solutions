@@ -16,7 +16,6 @@ from anthropic import Anthropic
 
 try:
     import tiktoken
-
     _tiktoken_encoding = tiktoken.get_encoding("cl100k_base")
 except ImportError:
     _tiktoken_encoding = None
@@ -29,7 +28,6 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RoutingDecision:
     """Routing decision with metadata"""
-
     model: str
     complexity: float
     estimated_cost: float
@@ -42,80 +40,60 @@ class SmartRouter:
 
     # Model configurations
     MODELS = {
-        "tinyllama": {
-            "backend": "local",
-            "max_complexity": 0.3,
-            "cost_per_token": 0.0,  # Free (local)
-            "endpoint": "http://localhost:11434/api/generate",
+        'tinyllama': {
+            'backend': 'local',
+            'max_complexity': 0.3,
+            'cost_per_token': 0.0,  # Free (local)
+            'endpoint': 'http://localhost:11434/api/generate'
         },
-        "phi2": {
-            "backend": "local",
-            "max_complexity": 0.6,
-            "cost_per_token": 0.0,  # Free (local)
-            "endpoint": "http://localhost:11434/api/generate",
+        'phi2': {
+            'backend': 'local',
+            'max_complexity': 0.6,
+            'cost_per_token': 0.0,  # Free (local)
+            'endpoint': 'http://localhost:11434/api/generate'
         },
         # NEW: Ternary models (BitNet 1.58-bit)
-        "bitnet-2b": {
-            "backend": "ternary",
-            "max_complexity": 0.5,
-            "cost_per_token": 0.0,  # Free (local)
-            "endpoint": "http://localhost:8003/generate",
-            "speed_multiplier": 6.0,  # 6x faster than standard
-            "energy_savings": 0.82,  # 82% energy reduction
+        'bitnet-2b': {
+            'backend': 'ternary',
+            'max_complexity': 0.5,
+            'cost_per_token': 0.0,  # Free (local)
+            'endpoint': 'http://localhost:8003/generate',
+            'speed_multiplier': 6.0,  # 6x faster than standard
+            'energy_savings': 0.82  # 82% energy reduction
         },
-        "mistral-7b-ternary": {
-            "backend": "ternary",
-            "max_complexity": 0.8,
-            "cost_per_token": 0.0,  # Free (local)
-            "endpoint": "http://localhost:8003/generate",
-            "speed_multiplier": 6.0,
-            "energy_savings": 0.82,
+        'mistral-7b-ternary': {
+            'backend': 'ternary',
+            'max_complexity': 0.8,
+            'cost_per_token': 0.0,  # Free (local)
+            'endpoint': 'http://localhost:8003/generate',
+            'speed_multiplier': 6.0,
+            'energy_savings': 0.82
         },
-        "claude-sonnet": {
-            "backend": "cloud",
-            "max_complexity": 1.0,
-            "cost_per_1m_tokens": 3.0,  # $3 per 1M tokens
-            "cost_per_token": 0.000003,
-        },
+        'claude-sonnet': {
+            'backend': 'cloud',
+            'max_complexity': 1.0,
+            'cost_per_1m_tokens': 3.0,  # $3 per 1M tokens
+            'cost_per_token': 0.000003
+        }
     }
 
     # Complexity keywords
     COMPLEX_KEYWORDS = [
-        "analyze",
-        "design",
-        "architect",
-        "implement",
-        "refactor",
-        "optimize",
-        "debug",
-        "explain in detail",
-        "comprehensive",
-        "write code",
-        "create function",
-        "build",
-        "develop",
+        'analyze', 'design', 'architect', 'implement', 'refactor',
+        'optimize', 'debug', 'explain in detail', 'comprehensive',
+        'write code', 'create function', 'build', 'develop'
     ]
 
     SIMPLE_KEYWORDS = [
-        "summarize",
-        "list",
-        "what is",
-        "define",
-        "yes or no",
-        "classify",
-        "categorize",
-        "is this",
-        "true or false",
+        'summarize', 'list', 'what is', 'define', 'yes or no',
+        'classify', 'categorize', 'is this', 'true or false'
     ]
 
     CODE_PATTERNS = [
-        r"```",  # Code blocks
-        r"\bdef\b",
-        r"\bclass\b",
-        r"\bfunction\b",  # Function/class definitions
-        r"\bimport\b",
-        r"\bfrom\b",  # Imports
-        r"[{}\[\]();]",  # Code-like syntax
+        r'```',  # Code blocks
+        r'\bdef\b', r'\bclass\b', r'\bfunction\b',  # Function/class definitions
+        r'\bimport\b', r'\bfrom\b',  # Imports
+        r'[{}\[\]();]',  # Code-like syntax
     ]
 
     def __init__(self, use_local: bool = True, complexity_threshold: float = 0.5, use_ternary: bool = True):
@@ -125,8 +103,8 @@ class SmartRouter:
         self.use_ternary = use_ternary
         self.ternary_available = False
         self.anthropic_client = None
-        self.claude_model = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514")
-        self.taskwarrior_enabled = os.getenv("ENABLE_TASKWARRIOR_LOGGING", "false").lower() == "true"
+        self.claude_model = os.getenv('CLAUDE_MODEL', 'claude-sonnet-4-20250514')
+        self.taskwarrior_enabled = os.getenv('ENABLE_TASKWARRIOR_LOGGING', 'false').lower() == 'true'
 
         # Check if ternary runtime is available
         if self.use_ternary:
@@ -137,7 +115,7 @@ class SmartRouter:
                 logger.info("Ternary runtime not available, using standard models")
 
         # Initialize Anthropic client if API key available
-        api_key = os.getenv("ANTHROPIC_API_KEY")
+        api_key = os.getenv('ANTHROPIC_API_KEY')
         if api_key:
             self.anthropic_client = Anthropic(api_key=api_key)
         else:
@@ -146,11 +124,11 @@ class SmartRouter:
     def _check_ternary_available(self) -> bool:
         """Check if ternary runtime is installed and running"""
         try:
-            ternary_url = os.getenv("TERNARY_URL", "http://localhost:8003")
+            ternary_url = os.getenv('TERNARY_URL', 'http://localhost:8003')
             response = requests.get(f"{ternary_url}/health", timeout=2)
             if response.status_code == 200:
                 data = response.json()
-                return data.get("ternary", False)
+                return data.get('ternary', False)
             return False
         except Exception:
             return False
@@ -193,7 +171,8 @@ class SmartRouter:
         score += keyword_score
 
         # Factor 3: Code detection
-        code_matches = sum(1 for pattern in self.CODE_PATTERNS if re.search(pattern, prompt))
+        code_matches = sum(1 for pattern in self.CODE_PATTERNS
+                           if re.search(pattern, prompt))
         if code_matches >= 2:
             code_score = 0.3
             factors.append("contains code")
@@ -202,10 +181,10 @@ class SmartRouter:
         score += code_score
 
         # Factor 4: Questions vs instructions
-        if "?" in prompt and prompt.count("?") <= 2:
+        if '?' in prompt and prompt.count('?') <= 2:
             question_score = -0.1
             factors.append("simple question")
-        elif "create" in prompt_lower or "build" in prompt_lower:
+        elif 'create' in prompt_lower or 'build' in prompt_lower:
             question_score = 0.2
             factors.append("creative task")
         else:
@@ -223,18 +202,18 @@ class SmartRouter:
         # Ternary-optimized routing (if available)
         if self.ternary_available:
             if complexity < 0.5:
-                return "bitnet-2b"  # Fast, efficient 2B model
+                return 'bitnet-2b'  # Fast, efficient 2B model
             elif complexity < 0.8:
-                return "mistral-7b-ternary"  # 7B quality, 2.5GB RAM
+                return 'mistral-7b-ternary'  # 7B quality, 2.5GB RAM
             else:
-                return "claude-sonnet"  # Ultra-complex only
+                return 'claude-sonnet'  # Ultra-complex only
         # Standard routing (no ternary)
         elif not self.use_local or complexity > 0.6:
-            return "claude-sonnet"
+            return 'claude-sonnet'
         elif complexity < 0.3:
-            return "tinyllama"
+            return 'tinyllama'
         else:
-            return "phi2"
+            return 'phi2'
 
     @staticmethod
     def _count_tokens(text: str) -> int:
@@ -246,13 +225,13 @@ class SmartRouter:
     def estimate_cost(self, prompt: str, model: str, response_length: int = 500) -> float:
         """Estimate cost for request"""
         model_config = self.MODELS.get(model)
-        if not model_config or model_config["backend"] in ("local", "ternary"):
+        if not model_config or model_config['backend'] in ('local', 'ternary'):
             return 0.0
 
         prompt_tokens = self._count_tokens(prompt)
         total_tokens = prompt_tokens + response_length
 
-        cost = total_tokens * model_config["cost_per_token"]
+        cost = total_tokens * model_config['cost_per_token']
         return cost
 
     def route_request(self, prompt: str) -> RoutingDecision:
@@ -275,7 +254,7 @@ class SmartRouter:
             complexity=complexity,
             estimated_cost=cost,
             reasoning=reasoning,
-            backend=model_config["backend"],
+            backend=model_config['backend']
         )
 
         logger.info(f"Routing decision: {model} (complexity: {complexity:.2f}, cost: ${cost:.6f})")
@@ -285,10 +264,14 @@ class SmartRouter:
 
     def execute_ternary_request(self, model: str, prompt: str) -> Dict:
         """Execute request on ternary model server (BitNet)"""
-        ternary_url = os.getenv("TERNARY_URL", "http://localhost:8003")
+        ternary_url = os.getenv('TERNARY_URL', 'http://localhost:8003')
         endpoint = f"{ternary_url}/generate"
 
-        payload = {"model": model, "prompt": prompt, "max_tokens": 512}
+        payload = {
+            "model": model,
+            "prompt": prompt,
+            "max_tokens": 512
+        }
 
         try:
             response = requests.post(endpoint, json=payload, timeout=60)
@@ -296,13 +279,13 @@ class SmartRouter:
             result = response.json()
 
             return {
-                "model": model,
-                "backend": "ternary",
-                "response": result.get("text", ""),
-                "inference_time_ms": result.get("inference_time_ms", 0),
-                "tokens_per_second": result.get("tokens_per_second", 0),
-                "cost": 0.0,
-                "quantization": "1.58-bit",
+                'model': model,
+                'backend': 'ternary',
+                'response': result.get('text', ''),
+                'inference_time_ms': result.get('inference_time_ms', 0),
+                'tokens_per_second': result.get('tokens_per_second', 0),
+                'cost': 0.0,
+                'quantization': '1.58-bit'
             }
         except Exception as e:
             logger.error(f"Ternary request failed: {e}, falling back to cloud")
@@ -311,14 +294,21 @@ class SmartRouter:
 
     def execute_ollama_request(self, model: str, prompt: str) -> Dict:
         """Execute request on local Ollama server"""
-        ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
+        ollama_url = os.getenv('OLLAMA_URL', 'http://localhost:11434')
         endpoint = f"{ollama_url}/api/generate"
 
         # Map our model names to Ollama model names
-        ollama_models = {"tinyllama": "tinyllama", "phi2": "phi"}
+        ollama_models = {
+            'tinyllama': 'tinyllama',
+            'phi2': 'phi'
+        }
         ollama_model = ollama_models.get(model, model)
 
-        payload = {"model": ollama_model, "prompt": prompt, "stream": False}
+        payload = {
+            "model": ollama_model,
+            "prompt": prompt,
+            "stream": False
+        }
 
         try:
             response = requests.post(endpoint, json=payload, timeout=60)
@@ -326,11 +316,11 @@ class SmartRouter:
             result = response.json()
 
             return {
-                "model": model,
-                "backend": "local",
-                "response": result.get("response", ""),
-                "tokens": result.get("total_duration", 0),
-                "cost": 0.0,
+                'model': model,
+                'backend': 'local',
+                'response': result.get('response', ''),
+                'tokens': result.get('total_duration', 0),
+                'cost': 0.0
             }
         except Exception as e:
             logger.error(f"Ollama request failed: {e}")
@@ -343,21 +333,23 @@ class SmartRouter:
 
         try:
             message = self.anthropic_client.messages.create(
-                model=self.claude_model, max_tokens=1024, messages=[{"role": "user", "content": prompt}]
+                model=self.claude_model,
+                max_tokens=1024,
+                messages=[{"role": "user", "content": prompt}]
             )
 
             # Calculate actual cost
             input_tokens = message.usage.input_tokens
             output_tokens = message.usage.output_tokens
-            cost = (input_tokens + output_tokens) * self.MODELS["claude-sonnet"]["cost_per_token"]
+            cost = (input_tokens + output_tokens) * self.MODELS['claude-sonnet']['cost_per_token']
 
             return {
-                "model": "claude-sonnet",
-                "backend": "cloud",
-                "response": message.content[0].text,
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "cost": cost,
+                'model': 'claude-sonnet',
+                'backend': 'cloud',
+                'response': message.content[0].text,
+                'input_tokens': input_tokens,
+                'output_tokens': output_tokens,
+                'cost': cost
             }
         except Exception as e:
             logger.error(f"Claude request failed: {e}")
@@ -372,18 +364,18 @@ class SmartRouter:
         decision = self.route_request(prompt)
 
         # Execute based on backend
-        if decision.backend == "ternary":
+        if decision.backend == 'ternary':
             result = self.execute_ternary_request(decision.model, prompt)
-        elif decision.backend == "local":
+        elif decision.backend == 'local':
             result = self.execute_ollama_request(decision.model, prompt)
         else:
             result = self.execute_claude_request(prompt)
 
         # Add routing metadata
-        result["routing"] = {
-            "complexity": decision.complexity,
-            "reasoning": decision.reasoning,
-            "estimated_cost": decision.estimated_cost,
+        result['routing'] = {
+            'complexity': decision.complexity,
+            'reasoning': decision.reasoning,
+            'estimated_cost': decision.estimated_cost
         }
 
         # Log to Taskwarrior (if available)
@@ -396,18 +388,14 @@ class SmartRouter:
         if not self.taskwarrior_enabled:
             return
         try:
-            backend_tag = "+ternary" if decision.backend == "ternary" else "+routing"
+            backend_tag = '+ternary' if decision.backend == 'ternary' else '+routing'
             description = f"AI Request: {decision.model}"
             subprocess.run(
                 [
-                    "task",
-                    "add",
-                    description,
-                    "project:vps_ai.router",
-                    backend_tag,
+                    'task', 'add', description,
+                    'project:vps_ai.router', backend_tag,
                 ],
-                capture_output=True,
-                check=False,
+                capture_output=True, check=False
             )
         except Exception as e:
             logger.debug(f"Taskwarrior logging failed: {e}")
@@ -415,7 +403,11 @@ class SmartRouter:
     def get_stats(self) -> Dict:
         """Get routing statistics (from Taskwarrior)"""
         try:
-            result = subprocess.run(["task", "project:vps_ai.router", "export"], capture_output=True, text=True)
+            result = subprocess.run(
+                ['task', 'project:vps_ai.router', 'export'],
+                capture_output=True,
+                text=True
+            )
 
             if result.returncode == 0 and result.stdout:
                 tasks = json.loads(result.stdout)
@@ -426,40 +418,37 @@ class SmartRouter:
                 ternary_requests = 0
 
                 for t in tasks:
-                    desc = t.get("description", "")
+                    desc = t.get('description', '')
                     if not desc.startswith(prefix):
                         continue
                     model_name = desc[len(prefix):]
                     model_config = self.MODELS.get(model_name)
                     if not model_config:
                         continue
-                    backend = model_config["backend"]
-                    if backend == "local":
+                    backend = model_config['backend']
+                    if backend == 'local':
                         local_requests += 1
-                    elif backend == "ternary":
+                    elif backend == 'ternary':
                         ternary_requests += 1
-                    elif backend == "cloud":
+                    elif backend == 'cloud':
                         cloud_requests += 1
 
                 total_requests = local_requests + cloud_requests + ternary_requests
                 return {
-                    "total_requests": total_requests,
-                    "local_requests": local_requests,
-                    "cloud_requests": cloud_requests,
-                    "ternary_requests": ternary_requests,
-                    "local_percentage": ((local_requests + ternary_requests) / total_requests * 100)
-                    if total_requests > 0
-                    else 0,
+                    'total_requests': total_requests,
+                    'local_requests': local_requests,
+                    'cloud_requests': cloud_requests,
+                    'ternary_requests': ternary_requests,
+                    'local_percentage': (
+                        (local_requests + ternary_requests) / total_requests * 100
+                    ) if total_requests > 0 else 0,
                 }
         except Exception:
             pass
 
         return {
-            "total_requests": 0,
-            "local_requests": 0,
-            "cloud_requests": 0,
-            "ternary_requests": 0,
-            "local_percentage": 0,
+            'total_requests': 0, 'local_requests': 0, 'cloud_requests': 0,
+            'ternary_requests': 0, 'local_percentage': 0,
         }
 
 
@@ -472,7 +461,7 @@ def main():
         print("Example: python smart_router.py 'What is Python?'")
         sys.exit(1)
 
-    prompt = " ".join(sys.argv[1:])
+    prompt = ' '.join(sys.argv[1:])
 
     # Initialize router
     router = SmartRouter()
@@ -481,14 +470,14 @@ def main():
     result = router.process_request(prompt)
 
     # Display results
-    print(f"\n{'=' * 60}")
+    print(f"\n{'='*60}")
     print(f"Model: {result['model']} ({result['backend']})")
     print(f"Complexity: {result['routing']['complexity']:.2f}")
     print(f"Reasoning: {result['routing']['reasoning']}")
     print(f"Cost: ${result['cost']:.6f}")
-    print(f"{'=' * 60}\n")
-    print(result["response"])
-    print(f"\n{'=' * 60}")
+    print(f"{'='*60}\n")
+    print(result['response'])
+    print(f"\n{'='*60}")
 
     # Show stats
     stats = router.get_stats()
@@ -498,5 +487,5 @@ def main():
     print(f"  Cloud: {stats['cloud_requests']}")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
